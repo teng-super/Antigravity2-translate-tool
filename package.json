@@ -1,0 +1,15 @@
+{
+  "name": "antigravity-translator",
+  "version": "1.0.0",
+  "description": "Simplified Chinese localization patcher for Antigravity 2.0 Desktop App",
+  "main": "patch.js",
+  "scripts": {
+    "patch": "node patch.js",
+    "revert": "node patch.js --revert"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.10"
+  },
+  "author": "张思腾",
+  "license": "MIT"
+}
