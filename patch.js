@@ -271,9 +271,28 @@ function buildInjectScript(dict) {
 (function() {
   const dictionary = ${JSON.stringify(dict, null, 2)};
 
+  // Pre-normalize dictionary keys for whitespace robustness
+  const normalizedDict = {};
+  for (const key in dictionary) {
+    normalizedDict[key.replace(/\\s+/g, ' ').trim()] = dictionary[key];
+  }
+
   // Regions whose text content must never be translated (user code, editable input).
   const EXCLUDE_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE']);
   const EXCLUDE_SELECTOR = '.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])';
+
+  // Debug log file helper
+  function logDebug(msg) {
+    try {
+      const fs = require('fs');
+      const logPath = 'C:/Users/张思腾/.gemini/antigravity/scratch/preload_debug.log';
+      fs.appendFileSync(logPath, \`[\${new Date().toISOString()}] \${msg}\\n\`);
+    } catch (e) {
+      // Ignore log write errors
+    }
+  }
+
+  logDebug('Preload script executed in window: ' + window.location.href);
 
   function isExcludedElement(el) {
     if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
@@ -292,30 +311,52 @@ function buildInjectScript(dict) {
 
   function translateText(text) {
     if (!text) return null;
-    const trimmed = text.trim();
-    if (!trimmed) return null;
+    const normalizedText = text.replace(/\\s+/g, ' ').trim();
+    if (!normalizedText) return null;
     
-    // 1. Exact match in dictionary
-    if (dictionary[trimmed]) {
-      return text.replace(trimmed, dictionary[trimmed]);
+    // 1. Exact match in normalized dictionary
+    if (normalizedDict[normalizedText]) {
+      return normalizedDict[normalizedText];
     }
     
-    // 2. Dynamic Regex translation for Token Usage percentage
-    const budgetMatch = trimmed.match(/^([\d.]+)%\s+of\s+the\s+customization\s+budget\s+is\s+available\.$/i);
+    // 2. Handle trailing ellipsis (...) or truncated text for long descriptions
+    let cleanText = normalizedText;
+    if (normalizedText.endsWith('...')) {
+      cleanText = normalizedText.slice(0, -3).trim();
+    } else if (normalizedText.endsWith('…')) {
+      cleanText = normalizedText.slice(0, -1).trim();
+    }
+    
+    if (cleanText.length > 20) {
+      for (const key in normalizedDict) {
+        if (key.startsWith(cleanText)) {
+          return normalizedDict[key];
+        }
+      }
+    }
+
+    // 3. Dynamic Regex translation for Token Usage percentage
+    const budgetMatch = normalizedText.match(/^([\\d.]+)%\\s+of\\s+the\\s+customization\\s+budget\\s+is\\s+available\\.$/i);
     if (budgetMatch) {
-      return text.replace(trimmed, `可用自定义额度为 ${budgetMatch[1]}%。`);
+      return \`可用自定义额度为 \${budgetMatch[1]}%。\`;
     }
     
-    // 3. Dynamic Regex translation for breakdowns link
-    const breakdownsMatch = trimmed.match(/^Show\s+(\d+)\s+breakdowns$/i);
+    // 4. Dynamic Regex translation for breakdowns link
+    const breakdownsMatch = normalizedText.match(/^Show\\s+(\\d+)\\s+breakdowns$/i);
     if (breakdownsMatch) {
-      return text.replace(trimmed, `查看 ${breakdownsMatch[1]} 项使用细分`);
+      return \`查看 \${breakdownsMatch[1]} 项使用细分\`;
     }
     
-    // 4. Dynamic Regex translation for Skills counts
-    const skillsMatch = trimmed.match(/^Skills\s*\((\d+)\)$/i);
+    // 5. Dynamic Regex translation for Skills counts
+    const skillsMatch = normalizedText.match(/^Skills\\s*\\((\\d+)\\)$/i);
     if (skillsMatch) {
-      return text.replace(trimmed, `已启用智能体技能 (${skillsMatch[1]})`);
+      return \`已启用智能体技能 (\${skillsMatch[1]})\`;
+    }
+
+    // 6. Dynamic Regex translation for Skills percent/tokens
+    const skillsPctMatch = normalizedText.match(/^Skills\\s*\\(([\\d.]+)%\\)\\s*([\\d,]+)$/i);
+    if (skillsPctMatch) {
+      return \`技能 (\${skillsPctMatch[1]}%) \${skillsPctMatch[2]} Token\`;
     }
     
     return null;

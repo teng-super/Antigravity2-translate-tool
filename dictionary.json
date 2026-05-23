@@ -399,5 +399,8 @@
   "uv": "uv 极速 Python 环境治理",
   "Checks whether the uv Python package manager is installed and installs it if missing. Ensures uv is on PATH. Use when another skill requires uv as a prerequisite.": "自动检测并安装由 Rust 编写的极速 uv 包管理器，确保其就绪于环境变量中。当其他 Python 依赖的技能运行前，会自动调度此模块进行前置的虚拟环境和包环境搭建。",
   "workflow-skill-creator": "工作流向技能打包提炼器",
-  "Distills a completed user workflow or interaction into a reusable agent skill. Use when the user asks to turn their workflow, interaction, or multi-step process into a skill, or when they say \"make this a skill\", \"create a skill from what we just did\", \"package this workflow\" or similar. Do not use for creating skills from scratch without an existing workflow (use a generic skill-creator for that).": "将您在本对话中已完成的复杂操作流或调试交互过程，自动分析、精简并生成为一个结构化的全新智能体技能包。当您希望把刚才成功的解决手段沉淀为持久的“新超能力”，或者用户提出“把刚才做的事包装成一个工具”时，运行此程序。不能在毫无实操过程的前提下无中生有地创建新技能。"
+  "Distills a completed user workflow or interaction into a reusable agent skill. Use when the user asks to turn their workflow, interaction, or multi-step process into a skill, or when they say \"make this a skill\", \"create a skill from what we just did\", \"package this workflow\" or similar. Do not use for creating skills from scratch without an existing workflow (use a generic skill-creator for that).": "将您在本对话中已完成的复杂操作流或调试交互过程，自动分析、精简并生成为一个结构化的全新智能体技能包。当您希望把刚才成功的解决手段沉淀为持久的“新超能力”，或者用户提出“把刚才做的事包装成一个工具”时，运行此程序。不能在毫无实操过程的前提下无中生有地创建新技能。",
+  "Configure default behaviors, skills, and MCP servers.": "配置默认行为、技能和 MCP 服务。",
+  "Learn more.": "了解更多",
+  "Learn more": "了解更多"
 }
