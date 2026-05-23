@@ -271,9 +271,29 @@ function buildInjectScript(dict) {
 (function() {
   const dictionary = ${JSON.stringify(dict, null, 2)};
 
+  // Regions whose text content must never be translated (user code, editable input).
+  const EXCLUDE_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE']);
+  const EXCLUDE_SELECTOR = '.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])';
+
+  function isExcludedElement(el) {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+    if (EXCLUDE_TAGS.has(el.tagName)) return true;
+    return typeof el.matches === 'function' && el.matches(EXCLUDE_SELECTOR);
+  }
+
+  function isInExcludedZone(node) {
+    let el = node && node.nodeType === Node.ELEMENT_NODE ? node : (node ? node.parentElement : null);
+    while (el) {
+      if (isExcludedElement(el)) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
   function translateText(text) {
-    if (!text) return text;
+    if (!text) return null;
     const trimmed = text.trim();
+    if (!trimmed) return null;
     if (dictionary[trimmed]) {
       return text.replace(trimmed, dictionary[trimmed]);
     }
@@ -287,6 +307,10 @@ function buildInjectScript(dict) {
         node.textContent = translated;
       }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // Never descend into code editors / editable regions (avoid corrupting user code).
+      if (isExcludedElement(node)) {
+        return;
+      }
       // Input placeholders
       if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
         const placeholder = node.getAttribute('placeholder');
@@ -301,6 +325,14 @@ function buildInjectScript(dict) {
         const translated = translateText(title);
         if (translated !== null) {
           node.setAttribute('title', translated);
+        }
+      }
+      // ARIA labels (commonly used by icon-only buttons)
+      if (node.hasAttribute('aria-label')) {
+        const ariaLabel = node.getAttribute('aria-label');
+        const translated = translateText(ariaLabel);
+        if (translated !== null) {
+          node.setAttribute('aria-label', translated);
         }
       }
       // Translate buttons/inputs with values
@@ -323,10 +355,14 @@ function buildInjectScript(dict) {
       for (let mutation of mutations) {
         if (mutation.type === 'childList') {
           for (let node of mutation.addedNodes) {
-            translateNode(node);
+            if (!isInExcludedZone(node)) {
+              translateNode(node);
+            }
           }
         } else if (mutation.type === 'characterData') {
-          translateNode(mutation.target);
+          if (!isInExcludedZone(mutation.target)) {
+            translateNode(mutation.target);
+          }
         }
       }
     });
