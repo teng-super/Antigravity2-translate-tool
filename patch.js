@@ -294,9 +294,30 @@ function buildInjectScript(dict) {
     if (!text) return null;
     const trimmed = text.trim();
     if (!trimmed) return null;
+    
+    // 1. Exact match in dictionary
     if (dictionary[trimmed]) {
       return text.replace(trimmed, dictionary[trimmed]);
     }
+    
+    // 2. Dynamic Regex translation for Token Usage percentage
+    const budgetMatch = trimmed.match(/^([\d.]+)%\s+of\s+the\s+customization\s+budget\s+is\s+available\.$/i);
+    if (budgetMatch) {
+      return text.replace(trimmed, `可用自定义额度为 ${budgetMatch[1]}%。`);
+    }
+    
+    // 3. Dynamic Regex translation for breakdowns link
+    const breakdownsMatch = trimmed.match(/^Show\s+(\d+)\s+breakdowns$/i);
+    if (breakdownsMatch) {
+      return text.replace(trimmed, `查看 ${breakdownsMatch[1]} 项使用细分`);
+    }
+    
+    // 4. Dynamic Regex translation for Skills counts
+    const skillsMatch = trimmed.match(/^Skills\s*\((\d+)\)$/i);
+    if (skillsMatch) {
+      return text.replace(trimmed, `已启用智能体技能 (${skillsMatch[1]})`);
+    }
+    
     return null;
   }
 
