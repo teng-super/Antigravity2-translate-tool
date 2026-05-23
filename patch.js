@@ -180,16 +180,16 @@ async function patch() {
     console.log('正在汉化 main.js (弹窗与托盘默认项)...');
     let mainContent = fs.readFileSync(mainPath, 'utf8');
     
-    // Replace quit confirmation strings
-    mainContent = mainContent.replace("buttons: ['Cancel', 'Quit']", "buttons: ['取消', '退出']");
-    mainContent = mainContent.replace("title: 'Confirm Quit'", "title: '确认退出'");
-    mainContent = mainContent.replace("message: 'Are you sure you want to quit?'", "message: '您确定要退出吗？'");
-    mainContent = mainContent.replace("detail: 'There may be agents or background tasks running.'", "detail: '可能还有智能体或后台任务正在运行。'");
+    // Replace quit confirmation strings with regex to match varying whitespace/formatting
+    mainContent = mainContent.replace(/buttons:\s*\[\s*'Cancel'\s*,\s*'Quit'\s*\]/g, "buttons: ['取消', '退出']");
+    mainContent = mainContent.replace(/title:\s*'Confirm Quit'/g, "title: '确认退出'");
+    mainContent = mainContent.replace(/message:\s*'Are you sure you want to quit\?'/g, "message: '您确定要退出吗？'");
+    mainContent = mainContent.replace(/detail:\s*'There may be agents or background tasks running\.'/g, "detail: '可能还有智能体或后台任务正在运行。'");
     
     // Replace default tray options
-    mainContent = mainContent.replace("label: 'No agents running'", "label: '没有运行中的智能体'");
-    mainContent = mainContent.replace("label: `Open ${electron_1.app.getName()}`", "label: `打开 ${electron_1.app.getName()}`");
-    mainContent = mainContent.replace("label: 'Quit'", "label: '退出'");
+    mainContent = mainContent.replace(/label:\s*'No agents running'/g, "label: '没有运行中的智能体'");
+    mainContent = mainContent.replace(/label:\s*`Open \${electron_1\.app\.getName\(\)}`/g, "label: `打开 ${electron_1.app.getName()}`");
+    mainContent = mainContent.replace(/label:\s*'Quit'/g, "label: '退出'");
 
     fs.writeFileSync(mainPath, mainContent, 'utf8');
   }
@@ -199,8 +199,8 @@ async function patch() {
   if (fs.existsSync(menuPath)) {
     console.log('正在汉化 menu.js (应用窗口菜单)...');
     let menuContent = fs.readFileSync(menuPath, 'utf8');
-    menuContent = menuContent.replace("label: 'New Window'", "label: '新建窗口'");
-    menuContent = menuContent.replace("label: 'Docs'", "label: '文档'");
+    menuContent = menuContent.replace(/label:\s*'New Window'/g, "label: '新建窗口'");
+    menuContent = menuContent.replace(/label:\s*'Docs'/g, "label: '文档'");
     fs.writeFileSync(menuPath, menuContent, 'utf8');
   }
 
@@ -209,15 +209,11 @@ async function patch() {
   if (fs.existsSync(trayPath)) {
     console.log('正在汉化 tray.js (系统托盘动态状态)...');
     let trayContent = fs.readFileSync(trayPath, 'utf8');
-    // Replace: countItem.label = (count > 0 ? `${count}` : 'No') + ' agent' + (count === 1 ? '' : 's') + ' running';
-    trayContent = trayContent.replace(
-      "(count > 0 ? `${count}` : 'No') +\r\n                    ' agent' +\r\n                    (count === 1 ? '' : 's') +\r\n                    ' running'",
-      "(count > 0 ? `${count} 个智能体正在运行` : '没有运行中的智能体')"
-    );
-    trayContent = trayContent.replace(
-      "(count > 0 ? `${count}` : 'No') +\n                    ' agent' +\n                    (count === 1 ? '' : 's') +\n                    ' running'",
-      "(count > 0 ? `${count} 个智能体正在运行` : '没有运行中的智能体')"
-    );
+    
+    // Use regex to robustly match dynamic string concat regardless of indentation and newlines
+    const trayRegex = /\(count\s*>\s*0\s*\?\s*`\$\{count\}`\s*:\s*'No'\)\s*\+\s*' agent'\s*\+\s*\(count\s*===\s*1\s*\?\s*''\s*:\s*'s'\)\s*\+\s*' running'/g;
+    trayContent = trayContent.replace(trayRegex, "(count > 0 ? `${count} 个智能体正在运行` : '没有运行中的智能体')");
+    
     fs.writeFileSync(trayPath, trayContent, 'utf8');
   }
 
